@@ -16,6 +16,8 @@ The application provides:
 
 # 📸 Preview
 
+![img alt](https://github.com/Abeesh-2027/tinygpt/blob/f72653c3398e6612afc05e79ac3c98bbc045a608/Screenshot%20(92).png)
+
 A sleek AI assistant dashboard with:
 
 - Sidebar model selector
