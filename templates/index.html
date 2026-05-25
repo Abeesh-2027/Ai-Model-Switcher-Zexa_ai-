@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Zexa AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+  <!-- Ambient blobs -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- Mobile nav toggle -->
+  <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle model list">
+    <i class="fa fa-sliders"></i>
+  </button>
+
+  <!-- Mobile overlay -->
+  <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileNav()"></div>
+
+  <div class="layout">
+
+    <!-- Left sidebar: Model selector -->
+    <aside class="sidebar sidebar-left" id="sidebarLeft">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span class="logo-z">Z</span>exa
+        </div>
+        <button class="sidebar-close" onclick="closeMobileNav()"><i class="fa fa-xmark"></i></button>
+      </div>
+
+      <div class="sidebar-label">SELECT MODEL</div>
+      <div class="model-list" id="modelList">
+        <button class="model-btn active" data-model="llama3">
+          <span class="model-icon">🦙</span>
+          <span class="model-info">
+            <span class="model-name">LLaMA 3</span>
+            <span class="model-tag">Meta · 70B</span>
+          </span>
+          <span class="model-indicator"></span>
+        </button>
+        <button class="model-btn" data-model="phi3">
+          <span class="model-icon">Φ</span>
+          <span class="model-info">
+            <span class="model-name">Phi-3</span>
+            <span class="model-tag">Microsoft · 3.8B</span>
+          </span>
+          <span class="model-indicator"></span>
+        </button>
+        <button class="model-btn" data-model="mistral">
+          <span class="model-icon">🌬️</span>
+          <span class="model-info">
+            <span class="model-name">Mistral</span>
+            <span class="model-tag">Mistral AI · 7B</span>
+          </span>
+          <span class="model-indicator"></span>
+        </button>
+        <button class="model-btn" data-model="gemma">
+          <span class="model-icon">💎</span>
+          <span class="model-info">
+            <span class="model-name">Gemma 2</span>
+            <span class="model-tag">Google · 9B</span>
+          </span>
+          <span class="model-indicator"></span>
+        </button>
+        <button class="model-btn" data-model="qwen">
+          <span class="model-icon">🔮</span>
+          <span class="model-info">
+            <span class="model-name">Qwen 2.5</span>
+            <span class="model-tag">Alibaba · 72B</span>
+          </span>
+          <span class="model-indicator"></span>
+        </button>
+      </div>
+
+      <div class="auto-badge">
+        <i class="fa fa-bolt"></i> AUTO DETECT
+      </div>
+
+      <!-- Mobile: session stats inside sidebar -->
+      <div class="mobile-session">
+        <div class="sidebar-label" style="margin-top:1.2rem">SESSION</div>
+        <div class="session-stats">
+          <div class="stat"><span class="stat-val" id="statMsgsMobile">0</span><span class="stat-lbl">Messages</span></div>
+          <div class="stat"><span class="stat-val" id="statTokensMobile">0</span><span class="stat-lbl">Tokens est.</span></div>
+        </div>
+        <button class="clear-btn" onclick="clearChat(); closeMobileNav()"><i class="fa fa-trash-alt"></i> Clear Chat</button>
+      </div>
+    </aside>
+
+    <!-- Center: Chat -->
+    <main class="chat-center">
+
+      <!-- Top bar (mobile) -->
+      <div class="topbar">
+        <div class="topbar-model" id="topbarModel">
+          <span id="topbarIcon">🦙</span>
+          <span id="topbarName">LLaMA 3</span>
+        </div>
+        <button class="topbar-clear" onclick="clearChat()" title="Clear chat"><i class="fa fa-rotate-left"></i></button>
+      </div>
+
+      <!-- Greeting -->
+      <div class="greeting-zone" id="greetingZone">
+        <div class="greeting-time" id="greetingTime"></div>
+        <h1 class="greeting-text" id="greetingText"></h1>
+        <p class="greeting-sub">What's on your mind today?</p>
+        <div class="greeting-chips">
+          <button class="chip" onclick="insertPrompt('Explain quantum entanglement simply')">⚛️ Quantum physics</button>
+          <button class="chip" onclick="insertPrompt('Write a short poem about the ocean')">🌊 Write a poem</button>
+          <button class="chip" onclick="insertPrompt('Help me debug my Python code')">🐍 Debug code</button>
+          <button class="chip" onclick="insertPrompt('Summarize the latest AI trends')">🤖 AI trends</button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages" id="messages"></div>
+
+      <!-- Input zone -->
+      <div class="input-zone">
+        <div class="auto-select-notice" id="autoNotice" style="display:none">
+          <i class="fa fa-magic"></i>
+          <span id="autoNoticeText">Auto-selected: LLaMA 3</span>
+        </div>
+
+        <div class="input-bar">
+          <label class="attach-btn" for="fileInput" title="Attach file">
+            <i class="fa fa-plus"></i>
+            <input type="file" id="fileInput" hidden multiple accept="*/*" onchange="handleFileAttach(event)"/>
+          </label>
+
+          <div class="file-chips" id="fileChips"></div>
+
+          <textarea
+            id="userInput"
+            class="text-input"
+            placeholder="Message Zexa…"
+            rows="1"
+            oninput="autoResize(this); detectModel(this.value)"
+            onkeydown="handleKey(event)"
+          ></textarea>
+
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+            <i class="fa fa-paper-plane"></i>
+          </button>
+        </div>
+
+        <div class="input-footer">
+          <span id="selectedModelLabel"><i class="fa fa-circle-dot"></i> LLaMA 3</span>
+          <span class="char-count" id="charCount">0 / 4096</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right sidebar: Stats -->
+    <aside class="sidebar sidebar-right">
+      <div class="sidebar-label">ACTIVE MODEL</div>
+      <div class="model-card" id="activeModelCard">
+        <div class="model-card-icon" id="cardIcon">🦙</div>
+        <div class="model-card-name" id="cardName">LLaMA 3</div>
+        <div class="model-card-detail" id="cardDetail">Meta · 70B params</div>
+        <div class="model-card-desc" id="cardDesc">Best for: reasoning, coding, long-context tasks.</div>
+        <div class="model-card-bar">
+          <div class="bar-label">Speed</div>
+          <div class="bar-track"><div class="bar-fill" id="barSpeed" style="width:70%"></div></div>
+        </div>
+        <div class="model-card-bar">
+          <div class="bar-label">Accuracy</div>
+          <div class="bar-track"><div class="bar-fill accent" id="barAccuracy" style="width:88%"></div></div>
+        </div>
+        <div class="model-card-bar">
+          <div class="bar-label">Context</div>
+          <div class="bar-track"><div class="bar-fill green" id="barContext" style="width:80%"></div></div>
+        </div>
+      </div>
+
+      <div class="sidebar-label" style="margin-top:1.5rem">SESSION</div>
+      <div class="session-stats">
+        <div class="stat"><span class="stat-val" id="statMsgs">0</span><span class="stat-lbl">Messages</span></div>
+        <div class="stat"><span class="stat-val" id="statTokens">0</span><span class="stat-lbl">Tokens est.</span></div>
+      </div>
+
+      <button class="clear-btn" onclick="clearChat()"><i class="fa fa-trash-alt"></i> Clear Chat</button>
+    </aside>
+
+  </div>
+
+<script src="{{ url_for('static', path='js/scripts.js') }}"></script>
+</body>
+</html>
